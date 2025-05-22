@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"strconv"
+	"strings"
 )
 
 func StringToStruct[T any](data string) (T, error) {
@@ -28,4 +29,11 @@ func MapToStruct(data map[string]string, result interface{}) error {
 		return fmt.Errorf("error decoding map to struct: %w", err)
 	}
 	return nil
+}
+func StringToSlice(str string) ([]string, error) {
+	var result []string
+	if str != "" {
+		result = strings.Split(str, ",")
+	}
+	return result, nil
 }

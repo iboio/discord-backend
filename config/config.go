@@ -25,12 +25,13 @@ var (
 	NatsPort                    string
 	JetstreamName               string
 	JetstreamSubjects           string
-	JetstreamSubjectsEventMsg   string
-	JetstreamSubjectsEventVoice string
+	JetstreamSubjectEventMsg    string
+	JetstreamSubjectEventVoice  string
+	JetstreamSubjectUserProfile string
 )
 
 func LoadConfig() {
-	err := godotenv.Load("../.env")
+	err := godotenv.Load()
 	if err != nil {
 		fmt.Println(err)
 		panic("Error loading .env file")
@@ -59,8 +60,9 @@ func LoadConfig() {
 	NatsPort = getEnv("NATS_PORT", "4223")
 	JetstreamName = getEnv("JETSTREAM_NAME", "discord")
 	JetstreamSubjects = getEnv("JETSTREAM_SUBJECTS", "event.*.*")
-	JetstreamSubjectsEventMsg = getEnv("JETSTREAM_SUBJECTS_EVENT_MSG", "event.msg")
-	JetstreamSubjectsEventVoice = getEnv("JETSTREAM_SUBJECTS_EVENT_VOICE", "event.voice.process")
+	JetstreamSubjectEventMsg = getEnv("JETSTREAM_SUBJECT_EVENT_MSG", "event.msg")
+	JetstreamSubjectEventVoice = getEnv("JETSTREAM_SUBJECTS_EVENT_VOICE", "event.voice.process")
+	JetstreamSubjectUserProfile = getEnv("JETSTREAM_SUBJECT_USER_PROFILE", "event.user.pfp")
 
 }
 

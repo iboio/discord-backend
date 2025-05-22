@@ -1,4 +1,4 @@
-package processor
+package worker
 
 import (
 	"discord/config"
@@ -21,20 +21,18 @@ const (
 	VoiceSwitch = "switch"
 )
 
-func (h *Handler) VoiceProcessor() {
+func (w *Worker) VoiceProcessor() {
 	fmt.Println("Voice Processor started")
-	fmt.Println(config.JetstreamSubjectsEventVoice)
-	_, err := h.js.Jetstream.Subscribe(
-		config.JetstreamSubjectsEventVoice,
+	_, err := w.stream.Jetstream.Subscribe(
+		config.JetstreamSubjectEventVoice,
 		func(msg *nats.Msg) {
 			stateCheck := Type{}
 			err := json.Unmarshal(msg.Data, &stateCheck)
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Println(stateCheck.Type)
 			if stateCheck.Type == VoiceJoin {
-				err := h.JoinEvent(string(msg.Data))
+				err := w.JoinEvent(string(msg.Data))
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -43,7 +41,7 @@ func (h *Handler) VoiceProcessor() {
 					fmt.Println(err)
 				}
 			} else if stateCheck.Type == VoiceLeave {
-				err := h.LeftEvent(string(msg.Data))
+				err := w.LeftEvent(string(msg.Data))
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -52,7 +50,7 @@ func (h *Handler) VoiceProcessor() {
 					fmt.Println(err)
 				}
 			} else if stateCheck.Type == VoiceSwitch {
-				err := h.SwitchEvent(string(msg.Data))
+				err := w.SwitchEvent(string(msg.Data))
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -61,6 +59,10 @@ func (h *Handler) VoiceProcessor() {
 					fmt.Println(err)
 				}
 			}
+			err = msg.Ack()
+			if err != nil {
+				fmt.Println("Error acknowledging message:", err)
+			}
 		},
 		nats.ManualAck(),
 		nats.Durable("backend-voice-consumer"))
@@ -68,7 +70,7 @@ func (h *Handler) VoiceProcessor() {
 		fmt.Println("Error subscribing to Jetstream:", err)
 	}
 }
-func (h *Handler) JoinEvent(rawData string) error {
+func (w *Worker) JoinEvent(rawData string) error {
 	data, err := methods.StringToStruct[models.VoiceStateUpdate](rawData)
 	if err != nil {
 		fmt.Println(err)
@@ -87,7 +89,7 @@ func (h *Handler) JoinEvent(rawData string) error {
 	return nil
 }
 
-func (h *Handler) LeftEvent(rawData string) error {
+func (w *Worker) LeftEvent(rawData string) error {
 	data, err := methods.StringToStruct[models.VoiceStateUpdate](rawData)
 	if err != nil {
 		fmt.Println(err)
@@ -99,14 +101,14 @@ func (h *Handler) LeftEvent(rawData string) error {
 	}
 	eventEpochTime := data.EventTime
 	count := LeftCountCalculator(joinEpochTime, eventEpochTime)
-	h.UserLeftChannelVoiceLog(data, count)
+	w.UserLeftChannelVoiceLog(data, count)
 	//h.VoiceTraffic(data, "left")
 	redisdb.HashDelAll(0, data.UserId)
 	redisdb.ListDelElement(0, data.ChannelId, data.UserId)
 	return nil
 }
 
-func (h *Handler) SwitchEvent(rawData string) error {
+func (w *Worker) SwitchEvent(rawData string) error {
 	data, err := methods.StringToStruct[models.VoiceStateSwitch](rawData)
 	if err != nil {
 		fmt.Println(err)
@@ -126,7 +128,7 @@ func (h *Handler) SwitchEvent(rawData string) error {
 		Username:    data.Username,
 		EventTime:   data.EventTime,
 	}
-	h.UserLeftChannelVoiceLog(oldChannel, count)
+	w.UserLeftChannelVoiceLog(oldChannel, count)
 	//h.VoiceTraffic(oldChannel, "left")
 	redisdb.ListMove(0, data.OldChannelId, data.NewChannelId, data.UserId)
 	redisdb.HashSet(0, data.UserId, "GuildId", data.GuildId)
@@ -162,7 +164,7 @@ func LeftCountCalculator(joinEventTime, leftEventTime int64) int64 {
 	}
 	return count
 }
-func (h *Handler) UserLeftChannelVoiceLog(voiceData models.VoiceStateUpdate, count int64) {
+func (w *Worker) UserLeftChannelVoiceLog(voiceData models.VoiceStateUpdate, count int64) {
 	data := models.VoiceQuery{
 		GuildId:     voiceData.GuildId,
 		ChannelId:   voiceData.ChannelId,
@@ -172,7 +174,7 @@ func (h *Handler) UserLeftChannelVoiceLog(voiceData models.VoiceStateUpdate, cou
 		Count:       int(count),
 		EventTime:   voiceData.EventTime,
 	}
-	err := h.ch.BatchVoice(&data)
+	err := w.batcher.BatchVoice(&data)
 	if err != nil {
 		fmt.Println(err)
 	}

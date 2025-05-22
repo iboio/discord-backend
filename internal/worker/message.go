@@ -1,4 +1,4 @@
-package processor
+package worker
 
 import (
 	"discord/config"
@@ -8,25 +8,26 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func (h *Handler) MessageProcessor() {
-	if h.js == nil {
+func (w *Worker) MessageProcessor() {
+
+	if w.stream.Jetstream == nil {
 		fmt.Println("Jetstream is nil")
 		return
 	}
 	fmt.Println("Message Processor started")
-	_, err := h.js.Jetstream.Subscribe(
-		config.JetstreamSubjectsEventMsg, func(msg *nats.Msg) {
+	_, err := w.stream.Jetstream.Subscribe(
+		config.JetstreamSubjectEventMsg, func(msg *nats.Msg) {
 			data, err := methods.StringToStruct[models.Message](string(msg.Data))
 			if err != nil {
 				fmt.Println(err)
 			}
-			err = h.ch.BatchMessage(&data)
+			err = w.batcher.BatchMessage(&data)
 			if err != nil {
 				fmt.Println(err)
 			}
 			err = msg.Ack()
 			if err != nil {
-				return
+				fmt.Println("Error acknowledging message:", err)
 			}
 		}, nats.ManualAck(), nats.Durable("backend-message-consumer"))
 	if err != nil {

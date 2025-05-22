@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package discord;
+option go_package = "./proto;discord";
+service Guild {
+  rpc GetGuilds(GetGuildsRequest) returns (GetGuildsResponse);
+}
+
+message GetGuildsRequest {
+}
+
+message GetGuildsResponse {
+  repeated GuildInfo guilds = 1;
+}
+
+message GuildInfo {
+  string id = 1;
+  string name = 2;
+  string icon = 3;
+}

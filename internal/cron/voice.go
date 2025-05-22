@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func (h *Handler) VoiceLogScheduler() {
+func (cr *Cron) VoiceLogScheduler() {
 	c := cron.New()
 	_, err := c.AddFunc(
 		"*/1 * * * *", func() {
@@ -49,7 +49,7 @@ func (h *Handler) VoiceLogScheduler() {
 						Count:       int(count),
 						EventTime:   nowEpoch,
 					}
-					err = h.ch.BatchVoice(&data)
+					err = cr.batch.BatchVoice(&data)
 					if err != nil {
 						return
 					}

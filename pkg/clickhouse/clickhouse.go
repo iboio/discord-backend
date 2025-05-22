@@ -15,7 +15,7 @@ type ConnectionClickhouse struct {
 	VoiceRecords   []string
 }
 
-func InitClickhouse() (*ConnectionClickhouse, error) {
+func InitClickhouse() (clickhouse.Conn, error) {
 	fmt.Println(config.ClickhouseHost, config.ClickhouseNativePort)
 	conn, err := clickhouse.Open(
 		&clickhouse.Options{
@@ -40,10 +40,5 @@ func InitClickhouse() (*ConnectionClickhouse, error) {
 	}
 
 	log.Println("Connected to ClickHouse successfully!")
-
-	return &ConnectionClickhouse{
-		MessageRecords: []string{},
-		VoiceRecords:   []string{},
-		Connection:     conn,
-	}, nil
+	return conn, nil
 }

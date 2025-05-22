@@ -58,7 +58,7 @@ func HashGet(db int, key, field string) string {
 	rdb := GetRedisClient(db)
 	val, err := rdb.HGet(ctx, key, field).Result()
 	if err != nil {
-		log.Printf("Redis HGet Error (DB %d): %v", db, err)
+		//log.Printf("Redis HGet Error (DB %d): %v", db, err)
 		return ""
 	}
 	return val
