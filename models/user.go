@@ -6,3 +6,8 @@ type HashUser struct {
 	EventTime   string `json:"eventTime"`
 	ChannelName string `json:"channelName"`
 }
+
+type UserProfile struct {
+	UserId     string `json:"userId"`
+	AvatarHash string `json:"avatarHash"`
+}

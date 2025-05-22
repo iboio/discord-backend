@@ -7,11 +7,7 @@ import (
 	"log"
 )
 
-type ContextJetstream struct {
-	Jetstream nats.JetStreamContext
-}
-
-func InitJetstream() (*ContextJetstream, error) {
+func InitJetstream() (nats.JetStreamContext, error) {
 	nc, err := nats.Connect(fmt.Sprintf("nats://%s:%s", config.NatsHost, config.NatsPort))
 	if err != nil {
 		return nil, err
@@ -27,7 +23,7 @@ func InitJetstream() (*ContextJetstream, error) {
 		return nil, err
 	}
 
-	return &ContextJetstream{Jetstream: js}, nil
+	return js, nil
 }
 
 func CreateStream(jetStream nats.JetStreamContext) error {
@@ -38,7 +34,7 @@ func CreateStream(jetStream nats.JetStreamContext) error {
 		_, err = jetStream.AddStream(
 			&nats.StreamConfig{
 				Name:       config.JetstreamName,
-				Subjects:   []string{config.JetstreamSubjects},
+				Subjects:   []string{"event.>"},
 				MaxBytes:   1024 * 1024 * 512,
 				Storage:    nats.MemoryStorage,
 				Retention:  nats.InterestPolicy,
